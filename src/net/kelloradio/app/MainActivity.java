@@ -12,14 +12,134 @@ import android.view.View;
 import android.view.ViewGroup;
 import java.util.ArrayList;
 
-public class MainActivity extends Activity
+class Player extends Object
     implements
-        View.OnClickListener,
         MediaPlayer.OnErrorListener,
         MediaPlayer.OnPreparedListener,
         MediaPlayer.OnInfoListener,
         MediaPlayer.OnBufferingUpdateListener
 {
+    interface IView
+    {
+        public void update();
+    }
+
+    IView view = null;
+
+    String name = "";
+    String url = "";
+
+    public boolean stopped = false; // user has stopped playback
+    public MediaPlayer mediaPlayer = null;
+
+    public boolean buffering = false;
+    public int info = 0;
+    public int error = 0;
+    public int bufferingPercent = 0;
+
+    Player(IView view) {
+        this.view = view;
+    }
+
+    public void set(String name, String url) {
+        this.name = name;
+        this.url = url;
+    }
+
+    public void togglePlay() {
+        if (mediaPlayer == null) {
+            stopped = false;
+            play();
+        } else {
+            stopped = true;
+            stop();
+        }
+    }
+
+    public void stop() {
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
+    public void play() {
+        stop();
+        error = 0;
+        info = 0;
+        buffering = false;
+        bufferingPercent = 0;
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setOnErrorListener(this);
+        mediaPlayer.setOnInfoListener(this);
+        mediaPlayer.setOnBufferingUpdateListener(this);
+        mediaPlayer.setOnPreparedListener(this);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
+        try {
+            mediaPlayer.setDataSource(this.url);
+            mediaPlayer.prepareAsync();
+        } catch (Exception e) {
+            stop();
+        }
+    }
+
+    public void resume() {
+        if (!stopped)
+            play();
+    }
+
+    public boolean started() {
+        return mediaPlayer != null;
+    }
+
+    public boolean playing() {
+        return mediaPlayer != null && mediaPlayer.isPlaying();
+    }
+
+    public boolean onError(MediaPlayer mp, int what, int extra) {
+        stop();
+        error = what;
+        view.update();
+        return false;
+    }
+
+    public boolean onInfo(MediaPlayer mp, int what, int extra) {
+        info = what;
+        if (info == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
+            buffering = true;
+        } else if (info == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
+            buffering = false;
+        }
+        view.update();
+        return false;
+    }
+
+    public void onBufferingUpdate(MediaPlayer mp, int percent) {
+        bufferingPercent = percent;
+        view.update();
+    }
+
+    public void onPrepared(MediaPlayer mp) {
+        mp.start();
+        view.update();
+    }
+
+    void saveInstanceState(Bundle outState) {
+        outState.putBoolean("stopped", mediaPlayer == null);
+    }
+
+    void restoreInstanceState(Bundle savedInstanceState) {
+        stopped = savedInstanceState.getBoolean("stopped", false);
+    }
+}
+
+public class MainActivity extends Activity
+    implements
+        View.OnClickListener,
+        Player.IView
+{
+    Player player = new Player(this);
+
     class Channel
     {
         String name = "";
@@ -29,17 +149,6 @@ public class MainActivity extends Activity
 
     ArrayList<Channel> channels = new ArrayList<Channel>();
 
-    String name = "";
-    String url = "";
-
-    boolean stopped = false; // user has stopped playback
-    MediaPlayer mediaPlayer = null;
-
-    boolean buffering = false;
-    int info = 0;
-    int error = 0;
-    int bufferingPercent = 0;
-
     View clickedView = null;
     boolean dirty = false;
 
@@ -48,7 +157,7 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
         initView();
         if (savedInstanceState != null) {
-            stopped = savedInstanceState.getBoolean("stopped", false);
+            player.restoreInstanceState(savedInstanceState);
         }
         checkFirstRun();
         load();
@@ -58,15 +167,14 @@ public class MainActivity extends Activity
     @Override
     public void onStart() {
         super.onStart();
-        if (!stopped)
-            play();
+        player.resume();
         updateView();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        stop();
+        player.stop();
         updateView();
     }
 
@@ -78,8 +186,12 @@ public class MainActivity extends Activity
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putBoolean("stopped", mediaPlayer == null);
+        player.saveInstanceState(outState);
         super.onSaveInstanceState(outState);
+    }
+
+    public void update() {
+        updateView();
     }
 
     public void checkFirstRun() {
@@ -106,8 +218,8 @@ public class MainActivity extends Activity
 
     public void load() {
         SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
-        name = settings.getString("name", "");
-        url = settings.getString("url", "");
+        player.name = settings.getString("name", "");
+        player.url = settings.getString("url", "");
         int ch_num = settings.getInt("ch_num", 0);
         channels.clear();
         for (int i = 0; i < ch_num; ++i) {
@@ -124,8 +236,8 @@ public class MainActivity extends Activity
         SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
         int old_ch_num = settings.getInt("ch_num", 0);
         SharedPreferences.Editor editor = settings.edit();
-        editor.putString("name", name);
-        editor.putString("url", url);
+        editor.putString("name", player.name);
+        editor.putString("url", player.url);
         editor.putInt("ch_num", channels.size());
         int i = 0;
         for (i = 0; i < channels.size(); ++i) {
@@ -165,35 +277,40 @@ public class MainActivity extends Activity
 
     public void updatePlayView() {
         TextView play = (TextView)findViewById(R.id.play);
+        if (clickedView == play) {
+            clickedView = null;
+            player.togglePlay();
+            dirty = true;
+        }
         TextView stream = (TextView)findViewById(R.id.stream);
         TextView status = (TextView)findViewById(R.id.status);
-        if (mediaPlayer != null) {
+        if (player.started()) {
             play.setText(getString(R.string.stop_text));
-            stream.setText(name);
+            stream.setText(player.name);
             StringBuilder b = new StringBuilder();
             b.append("[");
 
-            if (buffering) {
+            if (player.buffering) {
                 b.append(getString(R.string.buffering));
-                if (bufferingPercent > 0) {
+                if (player.bufferingPercent > 0) {
                     b.append(" ");
-                    b.append(bufferingPercent);
+                    b.append(player.bufferingPercent);
                     b.append("%");
                 }
             } else {
-                if (mediaPlayer.isPlaying()) {
+                if (player.playing()) {
                     b.append(getString(R.string.playing));
                 } else {
                     b.append(getString(R.string.connecting));
                 }
             }
 
-            if (info == 0) {
-            } else if (info == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
-            } else if (info == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
+            if (player.info == 0) {
+            } else if (player.info == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
+            } else if (player.info == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
             } else {
                 b.append(" ");
-                b.append(info);
+                b.append(player.info);
             }
 
             b.append("]");
@@ -201,12 +318,12 @@ public class MainActivity extends Activity
             status.setText(b.toString());
         } else {
             play.setText(getString(R.string.play_text));
-            stream.setText(name);
+            stream.setText(player.name);
             StringBuilder b = new StringBuilder();
             b.append("[");
-            if (error != 0) {
+            if (player.error != 0) {
                 b.append(getString(R.string.error));
-                b.append(error);
+                b.append(player.error);
             } else {
                 b.append(getString(R.string.stopped));
             }
@@ -228,9 +345,8 @@ public class MainActivity extends Activity
             Button chButton = (Button)channelsView.getChildAt(i);
             if (chButton == clickedView) {
                 clickedView = null;
-                name = channel.name;
-                url = channel.url;
-                play();
+                player.set(channel.name, channel.url);
+                player.play();
                 dirty = true;
             }
             chButton.setText(channel.name);
@@ -253,78 +369,8 @@ public class MainActivity extends Activity
         updateView();
     }
 
-    public void togglePlay() {
-        if (mediaPlayer == null) {
-            stopped = false;
-            play();
-        } else {
-            stopped = true;
-            stop();
-        }
-    }
-
     public void onClick(View view) {
-        View play = findViewById(R.id.play);
-        if (view == play) {
-            togglePlay();
-        } else {
-            clickedView = view;
-        }
-        updateView();
-    }
-
-    public void stop() {
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-    }
-
-    public void play() {
-        stop();
-        error = 0;
-        info = 0;
-        buffering = false;
-        bufferingPercent = 0;
-        mediaPlayer = new MediaPlayer();
-        mediaPlayer.setOnErrorListener(this);
-        mediaPlayer.setOnInfoListener(this);
-        mediaPlayer.setOnBufferingUpdateListener(this);
-        mediaPlayer.setOnPreparedListener(this);
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
-        try {
-            mediaPlayer.setDataSource(this.url);
-            mediaPlayer.prepareAsync();
-        } catch (Exception e) {
-            stop();
-        }
-    }
-
-    public boolean onError(MediaPlayer mp, int what, int extra) {
-        stop();
-        error = what;
-        updateView();
-        return false;
-    }
-
-    public boolean onInfo(MediaPlayer mp, int what, int extra) {
-        info = what;
-        if (info == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
-            buffering = true;
-        } else if (info == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
-            buffering = false;
-        }
-        updateView();
-        return false;
-    }
-
-    public void onBufferingUpdate(MediaPlayer mp, int percent) {
-        bufferingPercent = percent;
-        updateView();
-    }
-
-    public void onPrepared(MediaPlayer mp) {
-        mp.start();
+        clickedView = view;
         updateView();
     }
 }
