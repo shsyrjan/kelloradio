@@ -7,7 +7,10 @@ import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.widget.TextView;
+import android.widget.Button;
 import android.view.View;
+import android.view.ViewGroup;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity
     implements
@@ -17,6 +20,15 @@ public class MainActivity extends Activity
         MediaPlayer.OnInfoListener,
         MediaPlayer.OnBufferingUpdateListener
 {
+    class Channel
+    {
+        String name = "";
+        String url = "";
+        boolean starred = false;
+    }
+
+    ArrayList<Channel> channels = new ArrayList<Channel>();
+
     String name = "";
     String url = "";
 
@@ -28,12 +40,16 @@ public class MainActivity extends Activity
     int error = 0;
     int bufferingPercent = 0;
 
+    View clickedView = null;
+    boolean dirty = false;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (savedInstanceState != null) {
             stopped = savedInstanceState.getBoolean("stopped", false);
         }
+        checkFirstRun();
         init();
         load();
         update();
@@ -55,22 +71,79 @@ public class MainActivity extends Activity
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        save();
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putBoolean("stopped", mediaPlayer == null);
         super.onSaveInstanceState(outState);
     }
 
+    public void checkFirstRun() {
+        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
+        boolean first_run = settings.getBoolean("first_run", true);
+        if (first_run) {
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString("name", getString(R.string.ch_0_name));
+            editor.putString("url", getString(R.string.ch_0_url));
+
+            editor.putInt("ch_num", 2);
+            editor.putString("ch_0_name", getString(R.string.ch_0_name));
+            editor.putString("ch_0_url", getString(R.string.ch_0_url));
+            editor.putBoolean("ch_0_starred", true);
+
+            editor.putString("ch_1_name", getString(R.string.ch_1_name));
+            editor.putString("ch_1_url", getString(R.string.ch_1_url));
+            editor.putBoolean("ch_1_starred", true);
+
+            editor.putBoolean("first_run", false);
+            editor.commit();
+        }
+    }
+
     public void load() {
         SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
-        name = settings.getString("name", getString(R.string.ch_0_name));
-        url = settings.getString("url", getString(R.string.ch_0_url));
+        name = settings.getString("name", "");
+        url = settings.getString("url", "");
+        int ch_num = settings.getInt("ch_num", 0);
+        channels.clear();
+        for (int i = 0; i < ch_num; ++i) {
+            Channel channel = new Channel();
+            String ch_i = "ch_" + Integer.toString(i);
+            channel.name = settings.getString(ch_i + "_name", "");
+            channel.url = settings.getString(ch_i + "_url", "");
+            channel.starred = settings.getBoolean(ch_i + "_starred", false);
+            channels.add(channel);
+        }
     }
 
     public void save() {
         SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
+        int old_ch_num = settings.getInt("ch_num", 0);
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("name", name);
         editor.putString("url", url);
+        editor.putInt("ch_num", channels.size());
+        int i = 0;
+        for (i = 0; i < channels.size(); ++i) {
+            Channel channel = channels.get(i);
+            String ch_i = "ch_" + Integer.toString(i);
+            editor.putString(ch_i + "_name", channel.name);
+            editor.putString(ch_i + "_url", channel.url);
+            editor.putBoolean(ch_i + "_starred", channel.starred);
+        }
+        for (; i < old_ch_num; ++i) {
+            String ch_i = "ch_" + Integer.toString(i);
+            if (settings.contains(ch_i + "_name"))
+                editor.remove(ch_i + "_name");
+            if (settings.contains(ch_i + "_url"))
+                editor.remove(ch_i + "_url");
+            if (settings.contains(ch_i + "_starred"))
+                editor.remove(ch_i + "_starred");
+        }
         editor.commit();
     }
 
@@ -78,10 +151,6 @@ public class MainActivity extends Activity
         setContentView(R.layout.main);
         TextView play = (TextView)findViewById(R.id.play);
         play.setOnClickListener(this);
-        TextView ch0 = (TextView)findViewById(R.id.ch0);
-        ch0.setOnClickListener(this);
-        TextView ch1 = (TextView)findViewById(R.id.ch1);
-        ch1.setOnClickListener(this);
     }
 
     public void update() {
@@ -134,20 +203,50 @@ public class MainActivity extends Activity
             b.append("]");
             status.setText(b.toString());
         }
+        updateChannelsView();
+
+        if (dirty) {
+            dirty = false;
+            update();
+        }
     }
 
-    public void ch0() {
-        name = getString(R.string.ch_0_name);
-        url = getString(R.string.ch_0_url);
-        save();
-        play();
+    public void updateChannelsView() {
+        ViewGroup channelsView = (ViewGroup)findViewById(R.id.channels);
+        int i = 0;
+        for (; i < channels.size(); ++i) {
+            Channel channel = channels.get(i);
+            if (i >= channelsView.getChildCount()) {
+                Button newButton = new Button(this);
+                newButton.setOnClickListener(this);
+                channelsView.addView(newButton);
+            }
+            Button chButton = (Button)channelsView.getChildAt(i);
+            if (chButton == clickedView) {
+                clickedView = null;
+                name = channel.name;
+                url = channel.url;
+                play();
+                dirty = true;
+            }
+            chButton.setText(channel.name);
+        }
+        channelsView.removeViews(i, channelsView.getChildCount() - i);
     }
 
-    public void ch1() {
-        name = getString(R.string.ch_1_name);
-        url = getString(R.string.ch_1_url);
-        save();
-        play();
+    public void addTestChannel(View view) {
+        Channel channel = new Channel();
+        channel.name = getString(R.string.ch_0_name);
+        channel.url = getString(R.string.ch_0_url);
+        channels.add(channel);
+        update();
+    }
+
+    public void removeLastChannel(View view) {
+        if (channels.size() > 0) {
+            channels.remove(channels.size() - 1);
+        }
+        update();
     }
 
     public void togglePlay() {
@@ -162,15 +261,10 @@ public class MainActivity extends Activity
 
     public void onClick(View view) {
         View play = findViewById(R.id.play);
-        View ch0 = findViewById(R.id.ch0);
-        View ch1 = findViewById(R.id.ch1);
         if (view == play) {
             togglePlay();
-        } else if (view == ch0) {
-            ch0();
-        } else if (view == ch1) {
-            ch1();
         } else {
+            clickedView = view;
         }
         update();
     }

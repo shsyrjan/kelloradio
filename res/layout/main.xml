@@ -50,22 +50,30 @@
     </LinearLayout>
 
 
+    <LinearLayout android:id="@+id/channels"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="vertical" >
+    </LinearLayout>
+
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="horizontal" >
 
-        <Button android:id="@+id/ch0"
+        <Button android:id="@+id/add_test_channel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/ch_0_name"
-                android:textSize="24sp" />
+                android:text="Add Test"
+                android:textSize="24sp"
+                android:onClick="addTestChannel" />
 
-        <Button android:id="@+id/ch1"
+        <Button android:id="@+id/remove_last_channel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/ch_1_name"
-                android:textSize="24sp" />
+                android:text="Remove Last"
+                android:textSize="24sp"
+                android:onClick="removeLastChannel" />
 
     </LinearLayout>
 
