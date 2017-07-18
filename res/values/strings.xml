@@ -13,4 +13,18 @@
     <string name="connecting">connecting</string>
     <string name="playing">playing</string>
     <string name="stopped">stopped</string>
+
+    <string name="add_channel_text">Add Channel...</string>
+    <string name="more_channels">More channels...</string>
+    <string name="starred">\u2605</string>
+    <string name="not_starred">\u2606</string>
+
+    <string name="channel_edit_name_label">Name</string>
+    <string name="channel_edit_url_label">URL</string>
+
+    <string name="ok">Ok</string>
+    <string name="cancel">Cancel</string>
+    <string name="edit">\u270E</string>
+    <string name="try_play">Try to play</string>
+    <string name="remove_channel">Remove...</string>
 </resources>
