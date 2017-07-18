@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ch_0_name">Test 1</string>
+    <string name="ch_0_url"></string>
+    <string name="ch_1_name">Test 2</string>
+    <string name="ch_1_url"></string>
+
+    <string name="play_text">\u25BA</string>
+    <string name="stop_text">\u25A0</string>
+    <string name="empty_stream_text"></string>
+    <string name="buffering">buffering</string>
+    <string name="error">error</string>
+    <string name="connecting">connecting</string>
+    <string name="playing">playing</string>
+    <string name="stopped">stopped</string>
+</resources>
