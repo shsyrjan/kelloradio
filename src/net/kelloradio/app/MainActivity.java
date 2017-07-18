@@ -46,13 +46,13 @@ public class MainActivity extends Activity
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initView();
         if (savedInstanceState != null) {
             stopped = savedInstanceState.getBoolean("stopped", false);
         }
         checkFirstRun();
-        init();
         load();
-        update();
+        updateView();
     }
 
     @Override
@@ -60,14 +60,14 @@ public class MainActivity extends Activity
         super.onStart();
         if (!stopped)
             play();
-        update();
+        updateView();
     }
 
     @Override
     public void onStop() {
         super.onStop();
         stop();
-        update();
+        updateView();
     }
 
     @Override
@@ -147,13 +147,23 @@ public class MainActivity extends Activity
         editor.commit();
     }
 
-    public void init() {
+    public void initView() {
         setContentView(R.layout.main);
         TextView play = (TextView)findViewById(R.id.play);
         play.setOnClickListener(this);
     }
 
-    public void update() {
+    public void updateView() {
+        updatePlayView();
+        updateChannelsView();
+
+        if (dirty) {
+            dirty = false;
+            updateView();
+        }
+    }
+
+    public void updatePlayView() {
         TextView play = (TextView)findViewById(R.id.play);
         TextView stream = (TextView)findViewById(R.id.stream);
         TextView status = (TextView)findViewById(R.id.status);
@@ -203,12 +213,6 @@ public class MainActivity extends Activity
             b.append("]");
             status.setText(b.toString());
         }
-        updateChannelsView();
-
-        if (dirty) {
-            dirty = false;
-            update();
-        }
     }
 
     public void updateChannelsView() {
@@ -239,14 +243,14 @@ public class MainActivity extends Activity
         channel.name = getString(R.string.ch_0_name);
         channel.url = getString(R.string.ch_0_url);
         channels.add(channel);
-        update();
+        updateView();
     }
 
     public void removeLastChannel(View view) {
         if (channels.size() > 0) {
             channels.remove(channels.size() - 1);
         }
-        update();
+        updateView();
     }
 
     public void togglePlay() {
@@ -266,7 +270,7 @@ public class MainActivity extends Activity
         } else {
             clickedView = view;
         }
-        update();
+        updateView();
     }
 
     public void stop() {
@@ -299,7 +303,7 @@ public class MainActivity extends Activity
     public boolean onError(MediaPlayer mp, int what, int extra) {
         stop();
         error = what;
-        update();
+        updateView();
         return false;
     }
 
@@ -310,17 +314,17 @@ public class MainActivity extends Activity
         } else if (info == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
             buffering = false;
         }
-        update();
+        updateView();
         return false;
     }
 
     public void onBufferingUpdate(MediaPlayer mp, int percent) {
         bufferingPercent = percent;
-        update();
+        updateView();
     }
 
     public void onPrepared(MediaPlayer mp) {
         mp.start();
-        update();
+        updateView();
     }
 }
