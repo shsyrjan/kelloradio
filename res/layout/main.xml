@@ -4,9 +4,11 @@
              android:layout_width="match_parent"
              android:layout_height="match_parent">
 
-  <LinearLayout android:layout_width="match_parent"
+  <LinearLayout android:id="@+id/top_view"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical"
+                android:visibility="visible" >
 
     <!-- debug -->
     <LinearLayout android:layout_width="match_parent"
@@ -77,6 +79,25 @@
                   android:layout_height="wrap_content"
                   android:text="@string/more_channels"
                   android:onClick="onMoreChannels" />
+
+        </LinearLayout>
+
+        <!-- clock -->
+        <LinearLayout android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="horizontal" >
+
+          <Button android:id="@+id/set_alarm_time_button"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="\u23F0"
+                  android:textSize="32sp"
+                  android:onClick="onSetAlarm" />
+
+          <TextView android:id="@+id/alarm_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="32sp" />
 
         </LinearLayout>
 
@@ -162,6 +183,43 @@
         </LinearLayout>
       </LinearLayout>
     </ScrollView>
-
   </LinearLayout>
+
+  <!-- set alarm -->
+  <ScrollView android:id="@+id/set_alarm_view"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:visibility="gone">
+
+    <LinearLayout android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="vertical" >
+
+      <LinearLayout android:id="@+id/alarm_time_picker_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+      </LinearLayout>
+
+      <LinearLayout android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" >
+
+        <Button android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cancel"
+                android:onClick="onSetAlarmCancel"/>
+
+        <Button android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/remove"
+                android:onClick="onRemoveAlarm"/>
+
+        <Button android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/ok"
+                android:onClick="onSetAlarmOk"/>
+
+      </LinearLayout>
+    </LinearLayout>
+  </ScrollView>
 </FrameLayout>

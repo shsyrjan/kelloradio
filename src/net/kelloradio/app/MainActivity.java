@@ -10,9 +10,11 @@ import android.widget.TextView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.EditText;
+import android.widget.TimePicker;
 import android.view.View;
 import android.view.ViewGroup;
 import java.util.ArrayList;
+import android.provider.Settings;
 
 class Player extends Object
     implements
@@ -171,6 +173,11 @@ public class MainActivity extends Activity
     View clickedView = null;
     boolean dirty = false;
 
+    TimePicker timePicker = null;
+    boolean alarmSet = false;
+    int hour = 6;
+    int minute = 0;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -223,6 +230,11 @@ public class MainActivity extends Activity
         } else {
             changeView(main);
         }
+        updateView();
+    }
+
+    public void debug(String m) {
+        ((TextView)findViewById(R.id.debug)).setText(m);
         updateView();
     }
 
@@ -309,6 +321,7 @@ public class MainActivity extends Activity
         updateChannelsView();
         updateChannelListView();
         updateChannelEditView();
+        updateAlarmView();
 
         if (dirty) {
             dirty = false;
@@ -513,6 +526,49 @@ public class MainActivity extends Activity
         }
     }
 
+    public String time24(int hour, int minute) {
+        StringBuffer sb = new StringBuffer();
+        if (hour < 10)
+            sb.append("0");
+        sb.append(Integer.toString(hour));
+        sb.append(":");
+        if (minute < 10)
+            sb.append("0");
+        sb.append(minute);
+        return sb.toString();
+    }
+
+    public String time12(int hour, int minute) {
+        StringBuffer sb = new StringBuffer();
+        if (hour == 0 || hour == 12) {
+            sb.append("12");
+        } else {
+            if (hour % 12 < 10)
+                sb.append("0");
+            sb.append(Integer.toString(hour % 12));
+        }
+        sb.append(":");
+        if (minute < 10)
+            sb.append("0");
+        sb.append(Integer.toString(minute));
+        sb.append(" ");
+        sb.append(hour < 12 ? "AM" : "PM");
+        return sb.toString();
+    }
+
+    public void updateAlarmView() {
+        TextView alarmTime = (TextView)findViewById(R.id.alarm_time);
+        if (alarmSet) {
+            if (isTime24()) {
+                alarmTime.setText(time24(hour, minute));
+            } else {
+                alarmTime.setText(time12(hour, minute));
+            }
+        } else {
+            alarmTime.setText("--:--");
+        }
+    }
+
     public void editChannel(Channel channel) {
         targetChannel = channel;
         editedChannel.assign(channel);
@@ -541,6 +597,49 @@ public class MainActivity extends Activity
         newChannel.starred = false;
         editChannel(newChannel);
         updateView();
+    }
+
+    public boolean isTime24() {
+        return Settings.System.getInt(getContentResolver(), Settings.System.TIME_12_24, 24) == 24;
+    }
+
+    public TimePicker newTimePicker() {
+        TimePicker tp = new TimePicker(this);
+        tp.setIs24HourView(isTime24());
+        tp.setHour(hour);
+        tp.setMinute(minute);
+        return tp;
+    }
+
+    public void onSetAlarm(View view) {
+        findViewById(R.id.top_view).setVisibility(View.GONE);
+        findViewById(R.id.set_alarm_view).setVisibility(View.VISIBLE);
+        timePicker = newTimePicker();
+        ViewGroup alarmTimePickerContainer = (ViewGroup)findViewById(R.id.alarm_time_picker_container);
+        alarmTimePickerContainer.removeAllViews();
+        alarmTimePickerContainer.addView(timePicker);
+        updateView();
+    }
+
+    public void onSetAlarmOk(View view) {
+        hour = timePicker.getHour();
+        minute = timePicker.getMinute();
+        alarmSet = true;
+        findViewById(R.id.top_view).setVisibility(View.VISIBLE);
+        findViewById(R.id.set_alarm_view).setVisibility(View.GONE);
+        updateView();
+    }
+
+    public void onRemoveAlarm(View view) {
+        alarmSet = false;
+        findViewById(R.id.top_view).setVisibility(View.VISIBLE);
+        findViewById(R.id.set_alarm_view).setVisibility(View.GONE);
+        updateView();
+    }
+
+    public void onSetAlarmCancel(View view) {
+        findViewById(R.id.top_view).setVisibility(View.VISIBLE);
+        findViewById(R.id.set_alarm_view).setVisibility(View.GONE);
     }
 
     public void onClick(View view) {

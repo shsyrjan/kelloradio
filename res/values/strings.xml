@@ -23,6 +23,7 @@
     <string name="channel_edit_url_label">URL</string>
 
     <string name="ok">Ok</string>
+    <string name="remove">Remove</string>
     <string name="cancel">Cancel</string>
     <string name="edit">\u270E</string>
     <string name="try_play">Try to play</string>
