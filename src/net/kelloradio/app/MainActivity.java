@@ -248,7 +248,9 @@ public class MainActivity extends Activity
     }
 
     public void debug(String m) {
-        ((TextView)findViewById(R.id.debug)).setText(m);
+        TextView tv = ((TextView)findViewById(R.id.debug));
+        tv.setText(m);
+        tv.setVisibility(View.VISIBLE);
         updateView();
     }
 
