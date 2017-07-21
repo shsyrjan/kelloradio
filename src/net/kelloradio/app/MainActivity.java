@@ -327,6 +327,15 @@ public class MainActivity extends Activity
         findViewById(R.id.channel_edit_remove_button).setOnClickListener(this);
     }
 
+    public boolean clicked(View view) {
+        if (view == clickedView) {
+            clickedView = null;
+            dirty = true;
+            return true;
+        }
+        return false;
+    }
+
     public void updateView() {
         updatePlayView();
         updateChannelsView();
@@ -342,10 +351,8 @@ public class MainActivity extends Activity
 
     public void updatePlayView() {
         TextView play = (TextView)findViewById(R.id.play);
-        if (clickedView == play) {
-            clickedView = null;
+        if (clicked(play)) {
             player.togglePlay();
-            dirty = true;
         }
         TextView stream = (TextView)findViewById(R.id.stream);
         TextView status = (TextView)findViewById(R.id.status);
@@ -423,11 +430,9 @@ public class MainActivity extends Activity
             TextView starText = (TextView)starredItem.getChildAt(0);
             starText.setText(R.string.starred);
             Button channelText = (Button)starredItem.getChildAt(1);
-            if (channelText == clickedView) {
-                clickedView = null;
+            if (clicked(channelText)) {
                 player.set(channel.name, channel.url);
                 player.play();
-                dirty = true;
             }
             channelText.setText(channel.name);
             ++j;
@@ -460,10 +465,8 @@ public class MainActivity extends Activity
             ViewGroup channelItem = (ViewGroup)channelList.getChildAt(i);
 
             Button starButton = (Button)channelItem.getChildAt(0);
-            if (starButton == clickedView) {
-                clickedView = null;
+            if (clicked(starButton)) {
                 channel.starred = channel.starred ? false : true;
-                dirty = true;
             }
             if (channel.starred) {
                 starButton.setText(R.string.starred);
@@ -472,19 +475,15 @@ public class MainActivity extends Activity
             }
 
             Button channelText = (Button)channelItem.getChildAt(1);
-            if (channelText == clickedView) {
-                clickedView = null;
+            if (clicked(channelText)) {
                 player.set(channel.name, channel.url);
                 player.play();
-                dirty = true;
             }
             channelText.setText(channel.name);
 
             Button editButton = (Button)channelItem.getChildAt(2);
-            if (editButton == clickedView) {
-                clickedView = null;
+            if (clicked(editButton)) {
                 editChannel(channel);
-                dirty = true;
             }
             editButton.setText(getString(R.string.edit));
         }
@@ -503,37 +502,29 @@ public class MainActivity extends Activity
         String name = nameInput.getText().toString();
         String url = urlInput.getText().toString().trim();
 
-        if (ok == clickedView) {
+        if (clicked(ok)) {
             editedChannel.name = name;
             editedChannel.url = url;
 
-            clickedView = null;
             targetChannel.assign(editedChannel);
             if (targetChannel == newChannel) {
                 channels.add(new Channel(newChannel));
             } else {
             }
             changeView(findViewById(R.id.channel_list_view));
-            dirty = true;
         }
-        if (cancel == clickedView) {
-            clickedView = null;
+        if (clicked(cancel)) {
             changeView(findViewById(R.id.channel_list_view));
-            dirty = true;
         }
-        if (tryPlayButton == clickedView) {
-            clickedView = null;
+        if (clicked(tryPlayButton)) {
             player.set(name, url);
             player.play();
-            dirty = true;
         }
-        if (removeButton == clickedView) {
-            clickedView = null;
+        if (clicked(removeButton)) {
             if (targetChannel != newChannel) {
                 channels.remove(targetChannel);
             }
             changeView(findViewById(R.id.channel_list_view));
-            dirty = true;
         }
     }
 
