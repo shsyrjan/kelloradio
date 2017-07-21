@@ -431,12 +431,12 @@ public class MainActivity extends Activity
 
     public ViewGroup newStarredChannelItem() {
         LinearLayout item = new LinearLayout(this);
-        TextView star = new TextView(this);
-        star.setOnClickListener(this);
-        item.addView(star);
         Button text = new Button(this);
         text.setOnClickListener(this);
         item.addView(text);
+        TextView star = new TextView(this);
+        star.setOnClickListener(this);
+        item.addView(star);
         return item;
     }
 
@@ -448,20 +448,36 @@ public class MainActivity extends Activity
             Channel channel = channels.get(i);
             if (!channel.starred)
                 continue;
-            if (i >= channelsView.getChildCount()) {
+            if (j >= channelsView.getChildCount()) {
                 channelsView.addView(newStarredChannelItem());
             }
             ViewGroup starredItem = (ViewGroup)channelsView.getChildAt(j);
-            TextView starText = (TextView)starredItem.getChildAt(0);
-            starText.setText(R.string.starred);
-            Button channelText = (Button)starredItem.getChildAt(1);
+            Button channelText = (Button)starredItem.getChildAt(0);
             if (clicked(channelText)) {
                 player.set(channel.name, channel.url);
                 player.play();
             }
             channelText.setText(channel.name);
+            TextView starText = (TextView)starredItem.getChildAt(1);
+            starText.setVisibility(View.VISIBLE);
+            starText.setText(R.string.starred);
             ++j;
         }
+
+        // the last item navigates to full channel list
+        if (j >= channelsView.getChildCount()) {
+            channelsView.addView(newStarredChannelItem());
+        }
+        ViewGroup starredItem = (ViewGroup)channelsView.getChildAt(j);
+        Button channelText = (Button)starredItem.getChildAt(0);
+        channelText.setText(R.string.more_channels);
+        if (clicked(channelText)) {
+            setState(State.CHANNEL_LIST);
+        }
+        TextView starText = (TextView)starredItem.getChildAt(1);
+        starText.setVisibility(View.GONE);
+        ++j;
+
         channelsView.removeViews(j, channelsView.getChildCount() - j);
     }
 
@@ -605,11 +621,6 @@ public class MainActivity extends Activity
         EditText urlInput = (EditText)findViewById(R.id.channel_edit_url_input);
         urlInput.setText(editedChannel.url);
         setState(State.CHANNEL_EDIT);
-    }
-
-    public void onMoreChannels(View view) {
-        setState(State.CHANNEL_LIST);
-        updateView();
     }
 
     public void onAddChannel(View view) {
