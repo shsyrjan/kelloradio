@@ -97,6 +97,7 @@
           <TextView android:id="@+id/alarm_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:typeface="monospace"
                     android:textSize="32sp" />
 
         </LinearLayout>
@@ -147,11 +148,6 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical" >
 
-        <Button android:id="@+id/channel_edit_remove_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/remove_channel" />
-
         <TextView android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
                   android:text="@string/channel_edit_name_label" />
@@ -182,6 +178,12 @@
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
                   android:text="@string/cancel" />
+
+          <Button android:id="@+id/channel_edit_remove_button"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="@string/remove_channel" />
+
           <Button android:id="@+id/channel_edit_ok_button"
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
