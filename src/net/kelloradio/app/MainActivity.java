@@ -14,6 +14,7 @@ import android.widget.TimePicker;
 import android.view.View;
 import android.view.ViewGroup;
 import java.util.ArrayList;
+import java.util.Stack;
 import android.provider.Settings;
 
 class Player extends Object
@@ -170,6 +171,15 @@ public class MainActivity extends Activity
     Channel editedChannel = new Channel();
     Channel newChannel = new Channel();
 
+    public enum State {
+        MAIN,
+        ALARM_EDIT,
+        CHANNEL_LIST,
+        CHANNEL_EDIT
+    }
+
+    public Stack<State> stateStack = new Stack<State>();
+
     View clickedView = null;
     boolean dirty = false;
 
@@ -229,17 +239,10 @@ public class MainActivity extends Activity
 
     @Override
     public void onBackPressed() {
-        View main = findViewById(R.id.main_view);
-        View list = findViewById(R.id.channel_list_view);
-        View editor = findViewById(R.id.channel_edit_view);
-        if (main.getVisibility() == View.VISIBLE) {
+        if (getState() == State.MAIN) {
             super.onBackPressed();
-        } else if (list.getVisibility() == View.VISIBLE) {
-            changeView(main);
-        } else if (editor.getVisibility() == View.VISIBLE) {
-            changeView(list);
         } else {
-            changeView(main);
+            back();
         }
         updateView();
     }
@@ -251,6 +254,21 @@ public class MainActivity extends Activity
 
     public void update() {
         updateView();
+    }
+
+    public void back() {
+        if (!stateStack.empty())
+            stateStack.pop();
+    }
+
+    public void setState(State newState) {
+        stateStack.push(newState);
+    }
+
+    public State getState() {
+        if (stateStack.empty())
+            return State.MAIN;
+        return stateStack.peek();
     }
 
     public void checkFirstRun() {
@@ -337,6 +355,13 @@ public class MainActivity extends Activity
     }
 
     public void updateView() {
+
+        findViewById(R.id.top_view).setVisibility((getState() != State.ALARM_EDIT) ? View.VISIBLE : View.GONE);
+        findViewById(R.id.set_alarm_view).setVisibility((getState() == State.ALARM_EDIT) ? View.VISIBLE : View.GONE);
+        findViewById(R.id.main_view).setVisibility((getState() == State.MAIN) ? View.VISIBLE : View.GONE);
+        findViewById(R.id.channel_list_view).setVisibility((getState() == State.CHANNEL_LIST) ? View.VISIBLE : View.GONE);
+        findViewById(R.id.channel_edit_view).setVisibility((getState() == State.CHANNEL_EDIT) ? View.VISIBLE : View.GONE);
+
         updatePlayView();
         updateChannelsView();
         updateChannelListView();
@@ -511,10 +536,10 @@ public class MainActivity extends Activity
                 channels.add(new Channel(newChannel));
             } else {
             }
-            changeView(findViewById(R.id.channel_list_view));
+            back();
         }
         if (clicked(cancel)) {
-            changeView(findViewById(R.id.channel_list_view));
+            back();
         }
         if (clicked(tryPlayButton)) {
             player.set(name, url);
@@ -524,7 +549,7 @@ public class MainActivity extends Activity
             if (targetChannel != newChannel) {
                 channels.remove(targetChannel);
             }
-            changeView(findViewById(R.id.channel_list_view));
+            back();
         }
     }
 
@@ -578,18 +603,11 @@ public class MainActivity extends Activity
         nameInput.setText(editedChannel.name);
         EditText urlInput = (EditText)findViewById(R.id.channel_edit_url_input);
         urlInput.setText(editedChannel.url);
-        changeView(findViewById(R.id.channel_edit_view));
-    }
-
-    public void changeView(View view) {
-        findViewById(R.id.main_view).setVisibility(View.GONE);
-        findViewById(R.id.channel_list_view).setVisibility(View.GONE);
-        findViewById(R.id.channel_edit_view).setVisibility(View.GONE);
-        view.setVisibility(View.VISIBLE);
+        setState(State.CHANNEL_EDIT);
     }
 
     public void onMoreChannels(View view) {
-        changeView(findViewById(R.id.channel_list_view));
+        setState(State.CHANNEL_LIST);
         updateView();
     }
 
@@ -614,12 +632,11 @@ public class MainActivity extends Activity
     }
 
     public void onSetAlarm(View view) {
-        findViewById(R.id.top_view).setVisibility(View.GONE);
-        findViewById(R.id.set_alarm_view).setVisibility(View.VISIBLE);
         timePicker = newTimePicker();
         ViewGroup alarmTimePickerContainer = (ViewGroup)findViewById(R.id.alarm_time_picker_container);
         alarmTimePickerContainer.removeAllViews();
         alarmTimePickerContainer.addView(timePicker);
+        setState(State.ALARM_EDIT);
         updateView();
     }
 
@@ -627,21 +644,19 @@ public class MainActivity extends Activity
         hour = timePicker.getHour();
         minute = timePicker.getMinute();
         alarmSet = true;
-        findViewById(R.id.top_view).setVisibility(View.VISIBLE);
-        findViewById(R.id.set_alarm_view).setVisibility(View.GONE);
+        back();
         updateView();
     }
 
     public void onRemoveAlarm(View view) {
         alarmSet = false;
-        findViewById(R.id.top_view).setVisibility(View.VISIBLE);
-        findViewById(R.id.set_alarm_view).setVisibility(View.GONE);
+        back();
         updateView();
     }
 
     public void onSetAlarmCancel(View view) {
-        findViewById(R.id.top_view).setVisibility(View.VISIBLE);
-        findViewById(R.id.set_alarm_view).setVisibility(View.GONE);
+        back();
+        updateView();
     }
 
     public void onClick(View view) {
