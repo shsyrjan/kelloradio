@@ -200,14 +200,25 @@ public class MainActivity extends Activity
     @Override
     public void onStop() {
         super.onStop();
-        player.stop();
-        updateView();
     }
 
     @Override
     public void onPause() {
         super.onPause();
         save();
+        if (player.playing()) {
+            if (!requestVisibleBehind(true)) {
+                player.stop();
+            }
+        } else {
+            requestVisibleBehind(false);
+        }
+    }
+
+    @Override
+    public void onVisibleBehindCanceled() {
+        player.stop();
+        super.onVisibleBehindCanceled();
     }
 
     @Override
