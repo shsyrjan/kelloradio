@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application android:label="Kelloradio.net"
+                 android:allowBackup="false"
                  android:icon="@drawable/icon">
         <activity android:name="net.kelloradio.app.MainActivity" >
             <intent-filter>

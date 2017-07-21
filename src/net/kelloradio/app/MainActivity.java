@@ -278,16 +278,16 @@ public class MainActivity extends Activity
         boolean first_run = settings.getBoolean("first_run", true);
         if (first_run) {
             SharedPreferences.Editor editor = settings.edit();
-            editor.putString("name", getString(R.string.ch_0_name));
-            editor.putString("url", getString(R.string.ch_0_url));
+            editor.putString("name", getString(R.string.stock_ch_0_name));
+            editor.putString("url", getString(R.string.stock_ch_0_url));
 
             editor.putInt("ch_num", 2);
-            editor.putString("ch_0_name", getString(R.string.ch_0_name));
-            editor.putString("ch_0_url", getString(R.string.ch_0_url));
+            editor.putString("ch_0_name", getString(R.string.stock_ch_0_name));
+            editor.putString("ch_0_url", getString(R.string.stock_ch_0_url));
             editor.putBoolean("ch_0_starred", true);
 
-            editor.putString("ch_1_name", getString(R.string.ch_1_name));
-            editor.putString("ch_1_url", getString(R.string.ch_1_url));
+            editor.putString("ch_1_name", getString(R.string.stock_ch_1_name));
+            editor.putString("ch_1_url", getString(R.string.stock_ch_1_url));
             editor.putBoolean("ch_1_starred", true);
 
             editor.putBoolean("first_run", false);

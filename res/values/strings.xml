@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="ch_0_name">Test 1</string>
-    <string name="ch_0_url"></string>
-    <string name="ch_1_name">Test 2</string>
-    <string name="ch_1_url"></string>
+    <string name="stock_ch_0_name">Test 1</string>
+    <string name="stock_ch_0_url"></string>
+    <string name="stock_ch_1_name">Test 2</string>
+    <string name="stock_ch_1_url"></string>
 
     <!-- player -->
     <string name="play_text">\u25BA</string>
