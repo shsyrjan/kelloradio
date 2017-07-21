@@ -467,12 +467,13 @@ public class MainActivity extends Activity
 
     public ViewGroup newChannelItem() {
         LinearLayout item = new LinearLayout(this);
+        Button text = new Button(this);
+        text.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f));
+        text.setOnClickListener(this);
+        item.addView(text);
         Button star = new Button(this);
         star.setOnClickListener(this);
         item.addView(star);
-        Button text = new Button(this);
-        text.setOnClickListener(this);
-        item.addView(text);
         Button edit = new Button(this);
         edit.setOnClickListener(this);
         item.addView(edit);
@@ -489,7 +490,14 @@ public class MainActivity extends Activity
             }
             ViewGroup channelItem = (ViewGroup)channelList.getChildAt(i);
 
-            Button starButton = (Button)channelItem.getChildAt(0);
+            Button channelText = (Button)channelItem.getChildAt(0);
+            if (clicked(channelText)) {
+                player.set(channel.name, channel.url);
+                player.play();
+            }
+            channelText.setText(channel.name);
+
+            Button starButton = (Button)channelItem.getChildAt(1);
             if (clicked(starButton)) {
                 channel.starred = channel.starred ? false : true;
             }
@@ -498,13 +506,6 @@ public class MainActivity extends Activity
             } else {
                 starButton.setText(R.string.not_starred);
             }
-
-            Button channelText = (Button)channelItem.getChildAt(1);
-            if (clicked(channelText)) {
-                player.set(channel.name, channel.url);
-                player.play();
-            }
-            channelText.setText(channel.name);
 
             Button editButton = (Button)channelItem.getChildAt(2);
             if (clicked(editButton)) {
@@ -655,6 +656,11 @@ public class MainActivity extends Activity
     }
 
     public void onSetAlarmCancel(View view) {
+        back();
+        updateView();
+    }
+
+    public void onBack(View view) {
         back();
         updateView();
     }
