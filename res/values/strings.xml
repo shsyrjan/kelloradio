@@ -5,8 +5,10 @@
     <string name="ch_1_name">Test 2</string>
     <string name="ch_1_url"></string>
 
+    <!-- player -->
     <string name="play_text">\u25BA</string>
     <string name="stop_text">\u25A0</string>
+
     <string name="empty_stream_text"></string>
     <string name="buffering">buffering</string>
     <string name="error">error</string>
@@ -14,19 +16,26 @@
     <string name="playing">playing</string>
     <string name="stopped">stopped</string>
 
-    <string name="add_channel_text">Add Channel...</string>
+    <!-- starred list -->
+    <string name="starred_list_separator">\u2605</string>
     <string name="more_channels">More channels...</string>
+
+    <!-- channel list -->
     <string name="starred">\u2605</string>
     <string name="not_starred">\u2606</string>
+    <string name="edit">\u270E</string>
 
+    <string name="add_channel_text">Add Channel...</string>
+
+    <!-- channel edit -->
     <string name="channel_edit_name_label">Name</string>
     <string name="channel_edit_url_label">URL</string>
+    <string name="try_play">Try to play</string>
+    <string name="remove_channel">Remove...</string>
 
+    <!-- general -->
     <string name="ok">Ok</string>
     <string name="remove">Remove</string>
     <string name="cancel">Cancel</string>
     <string name="back">Back</string>
-    <string name="edit">\u270E</string>
-    <string name="try_play">Try to play</string>
-    <string name="remove_channel">Remove...</string>
 </resources>

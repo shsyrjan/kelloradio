@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- player -->
+    <string name="empty_stream_text"></string>
+    <string name="buffering">bufferoi</string>
+    <string name="error">virhe</string>
+    <string name="connecting">yhdistää</string>
+    <string name="playing">soittaa</string>
+    <string name="stopped">stop</string>
+
+    <!-- starred list -->
+    <string name="more_channels">Lisää kanavia...</string>
+
+    <!-- channel list -->
+    <string name="add_channel_text">Lisää kanava...</string>
+
+    <!-- channel edit -->
+    <string name="channel_edit_name_label">Nimi</string>
+    <string name="channel_edit_url_label">URL</string>
+    <string name="try_play">Yritä toistaa</string>
+    <string name="remove_channel">Poista kanava...</string>
+
+    <!-- general -->
+    <string name="ok">Ok</string>
+    <string name="remove">Poista</string>
+    <string name="cancel">Peruuta</string>
+    <string name="back">Takaisin</string>
+</resources>
