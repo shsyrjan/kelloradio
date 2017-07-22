@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.os.Bundle;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.widget.TextView;
@@ -154,6 +156,8 @@ public class MainActivity extends Activity
     static final long ONE_HOUR   = 1000*60*60;
     static final long ONE_DAY    = 1000*60*60*24;
 
+    static final String SETTINGS = "MainActivity";
+
     Player player = new Player(this);
 
     class Channel
@@ -285,7 +289,7 @@ public class MainActivity extends Activity
     }
 
     public void checkFirstRun() {
-        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences settings = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
         boolean first_run = settings.getBoolean("first_run", true);
         if (first_run) {
             SharedPreferences.Editor editor = settings.edit();
@@ -307,7 +311,7 @@ public class MainActivity extends Activity
     }
 
     public void load() {
-        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences settings = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
         player.name = settings.getString("name", "");
         player.url = settings.getString("url", "");
         int ch_num = settings.getInt("ch_num", 0);
@@ -328,7 +332,7 @@ public class MainActivity extends Activity
     }
 
     public void save() {
-        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences settings = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
         int old_ch_num = settings.getInt("ch_num", 0);
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("name", player.name);
@@ -655,7 +659,7 @@ public class MainActivity extends Activity
         updateView();
     }
 
-    public Calendar getTimeUntil(int hour, int minutes) {
+    public static Calendar getTimeUntil(int hour, int minutes) {
         Calendar now = Calendar.getInstance();
         Calendar next = Calendar.getInstance();
         next.set(Calendar.HOUR_OF_DAY, hour);
@@ -770,33 +774,46 @@ public class MainActivity extends Activity
 
     public void updateAlarm() {
         if (alarmSet) {
-            setAlarm(getTimeUntil(hour, minute));
+            setAlarm(this, getTimeUntil(hour, minute));
         } else {
-            cancelAlarm();
+            cancelAlarm(this);
         }
     }
 
-    public PendingIntent getAlarmIntent() {
-        Intent intent = new Intent(this, MainActivity.class);
+    public static PendingIntent getAlarmIntent(Context context) {
+        Intent intent = new Intent(context, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(
-            this,
+            context,
             0,
             intent,
             PendingIntent.FLAG_CANCEL_CURRENT);
     }
 
-    public void setAlarm(Calendar alarmTime) {
-        AlarmManager alarmMgr = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+    public static void setAlarm(Context context, Calendar alarmTime) {
+        AlarmManager alarmMgr = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
         alarmMgr.setRepeating(
             AlarmManager.RTC_WAKEUP,
             alarmTime.getTimeInMillis(),
             ONE_DAY,
-            getAlarmIntent());
+            getAlarmIntent(context));
+
+        setBootReceiverEnabled(context, true);
     }
 
-    public void cancelAlarm() {
-        AlarmManager alarmMgr = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-        alarmMgr.cancel(getAlarmIntent());
+    public static void cancelAlarm(Context context) {
+        AlarmManager alarmMgr = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+        alarmMgr.cancel(getAlarmIntent(context));
+        setBootReceiverEnabled(context, false);
+    }
+
+    public static void setBootReceiverEnabled(Context context, boolean enabled) {
+        ComponentName receiver = new ComponentName(context, BootReceiver.class);
+        PackageManager pm = context.getPackageManager();
+        pm.setComponentEnabledSetting(
+            receiver,
+            enabled ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                    : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP);
     }
 }
