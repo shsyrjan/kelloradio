@@ -1,8 +1,11 @@
 package net.kelloradio.app;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.os.Bundle;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -11,9 +14,11 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.EditText;
 import android.widget.TimePicker;
+import android.widget.Toast;
 import android.view.View;
 import android.view.ViewGroup;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Stack;
 import android.provider.Settings;
 
@@ -144,6 +149,11 @@ public class MainActivity extends Activity
         View.OnClickListener,
         Player.IView
 {
+    static final long ONE_SECOND = 1000;
+    static final long ONE_MINUTE = 1000*60;
+    static final long ONE_HOUR   = 1000*60*60;
+    static final long ONE_DAY    = 1000*60*60*24;
+
     Player player = new Player(this);
 
     class Channel
@@ -197,6 +207,7 @@ public class MainActivity extends Activity
         }
         checkFirstRun();
         load();
+        updateAlarm();
         updateView();
     }
 
@@ -309,6 +320,11 @@ public class MainActivity extends Activity
             channel.starred = settings.getBoolean(ch_i + "_starred", false);
             channels.add(channel);
         }
+
+        // alarm
+        hour = settings.getInt("hour", 6);
+        minute = settings.getInt("minute", 0);
+        alarmSet = settings.getBoolean("alarm_set", false);
     }
 
     public void save() {
@@ -335,6 +351,12 @@ public class MainActivity extends Activity
             if (settings.contains(ch_i + "_starred"))
                 editor.remove(ch_i + "_starred");
         }
+
+        // alarm
+        editor.putInt("hour", hour);
+        editor.putInt("minute", minute);
+        editor.putBoolean("alarm_set", alarmSet);
+
         editor.commit();
     }
 
@@ -633,6 +655,65 @@ public class MainActivity extends Activity
         updateView();
     }
 
+    public Calendar getTimeUntil(int hour, int minutes) {
+        Calendar now = Calendar.getInstance();
+        Calendar next = Calendar.getInstance();
+        next.set(Calendar.HOUR_OF_DAY, hour);
+        next.set(Calendar.MINUTE, minutes);
+        next.set(Calendar.SECOND, 0);
+        if (next.before(now) || next.equals(now)) {
+            // the next time is tomorrow
+            next.roll(Calendar.DATE, true);
+        }
+        return next;
+    }
+
+    public void alarmToast() {
+        Calendar alarmTime = getTimeUntil(hour, minute);
+        Calendar now = Calendar.getInstance();
+        long diff = alarmTime.getTimeInMillis() - now.getTimeInMillis();
+        long hours = diff/ONE_HOUR;
+        long minutes = (diff/ONE_MINUTE) % 60;
+        long seconds = (diff/ONE_SECOND) % 60;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(getString(R.string.time_until_next_alarm));
+        sb.append("\n");
+
+        if (diff >= ONE_HOUR) {
+            sb.append(hours);
+            sb.append(" ");
+            if (hours < 2) {
+                sb.append(getString(R.string.hour));
+            } else {
+                sb.append(getString(R.string.hours));
+            }
+            sb.append(" ");
+        }
+
+        if (diff >= ONE_MINUTE) {
+            sb.append(minutes);
+            sb.append(" ");
+            if (minutes < 2) {
+                sb.append(getString(R.string.minute));
+            } else {
+                sb.append(getString(R.string.minutes));
+            }
+        }
+
+        if (diff < ONE_MINUTE) {
+            sb.append(seconds);
+            sb.append(" ");
+            if (seconds < 2) {
+                sb.append(getString(R.string.second));
+            } else {
+                sb.append(getString(R.string.seconds));
+            }
+        }
+
+        Toast.makeText(this, sb.toString(), Toast.LENGTH_LONG).show();
+    }
+
     public boolean isTime24() {
         return Settings.System.getInt(getContentResolver(), Settings.System.TIME_12_24, 24) == 24;
     }
@@ -658,13 +739,17 @@ public class MainActivity extends Activity
         hour = timePicker.getHour();
         minute = timePicker.getMinute();
         alarmSet = true;
+        updateAlarm();
         back();
+        alarmToast();
         updateView();
     }
 
     public void onRemoveAlarm(View view) {
         alarmSet = false;
+        updateAlarm();
         back();
+        Toast.makeText(this, getString(R.string.alarm_removed), Toast.LENGTH_LONG).show();
         updateView();
     }
 
@@ -681,5 +766,37 @@ public class MainActivity extends Activity
     public void onClick(View view) {
         clickedView = view;
         updateView();
+    }
+
+    public void updateAlarm() {
+        if (alarmSet) {
+            setAlarm(getTimeUntil(hour, minute));
+        } else {
+            cancelAlarm();
+        }
+    }
+
+    public PendingIntent getAlarmIntent() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        return PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_CANCEL_CURRENT);
+    }
+
+    public void setAlarm(Calendar alarmTime) {
+        AlarmManager alarmMgr = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        alarmMgr.setRepeating(
+            AlarmManager.RTC_WAKEUP,
+            alarmTime.getTimeInMillis(),
+            ONE_DAY,
+            getAlarmIntent());
+    }
+
+    public void cancelAlarm() {
+        AlarmManager alarmMgr = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        alarmMgr.cancel(getAlarmIntent());
     }
 }

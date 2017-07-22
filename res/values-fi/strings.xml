@@ -25,4 +25,15 @@
     <string name="remove">Poista</string>
     <string name="cancel">Peruuta</string>
     <string name="back">Takaisin</string>
+
+    <!-- alarm notification -->
+    <string name="time_until_next_alarm">Seuraavaan hälytykseen on aikaa</string>
+    <string name="hour">tunti</string>
+    <string name="hours">tuntia</string>
+    <string name="minute">minuutti</string>
+    <string name="minutes">minuuttia</string>
+    <string name="second">sekunti</string>
+    <string name="seconds">sekuntia</string>
+    <string name="alarm_removed">Hälytys poistettu</string>
+
 </resources>
