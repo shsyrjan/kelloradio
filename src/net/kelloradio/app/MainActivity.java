@@ -376,7 +376,7 @@ public class MainActivity extends Activity
         editor.putInt("minute", minute);
         editor.putBoolean("alarm_set", alarmSet);
 
-        editor.commit();
+        editor.apply();
     }
 
     public void initView() {
@@ -558,6 +558,7 @@ public class MainActivity extends Activity
             Button starButton = (Button)channelItem.getChildAt(1);
             if (clicked(starButton)) {
                 channel.starred = channel.starred ? false : true;
+                save();
             }
             if (channel.starred) {
                 starButton.setText(R.string.starred);
@@ -595,6 +596,7 @@ public class MainActivity extends Activity
                 channels.add(new Channel(newChannel));
             } else {
             }
+            save();
             back();
         }
         if (clicked(cancel)) {
@@ -757,6 +759,7 @@ public class MainActivity extends Activity
         hour = timePicker.getHour();
         minute = timePicker.getMinute();
         alarmSet = true;
+        save();
         updateAlarm();
         back();
         alarmToast();
@@ -765,6 +768,7 @@ public class MainActivity extends Activity
 
     public void onRemoveAlarm(View view) {
         alarmSet = false;
+        save();
         updateAlarm();
         back();
         Toast.makeText(this, getString(R.string.alarm_removed), Toast.LENGTH_LONG).show();
