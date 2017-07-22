@@ -311,14 +311,25 @@ public class MainActivity extends Activity
             editor.putString("name", getString(R.string.stock_ch_0_name));
             editor.putString("url", getString(R.string.stock_ch_0_url));
 
-            editor.putInt("ch_num", 2);
+            editor.putInt("ch_num", 6);
             editor.putString("ch_0_name", getString(R.string.stock_ch_0_name));
             editor.putString("ch_0_url", getString(R.string.stock_ch_0_url));
             editor.putBoolean("ch_0_starred", true);
-
             editor.putString("ch_1_name", getString(R.string.stock_ch_1_name));
             editor.putString("ch_1_url", getString(R.string.stock_ch_1_url));
             editor.putBoolean("ch_1_starred", true);
+            editor.putString("ch_2_name", getString(R.string.stock_ch_2_name));
+            editor.putString("ch_2_url", getString(R.string.stock_ch_2_url));
+            editor.putBoolean("ch_2_starred", true);
+            editor.putString("ch_3_name", getString(R.string.stock_ch_3_name));
+            editor.putString("ch_3_url", getString(R.string.stock_ch_3_url));
+            editor.putBoolean("ch_3_starred", false);
+            editor.putString("ch_4_name", getString(R.string.stock_ch_4_name));
+            editor.putString("ch_4_url", getString(R.string.stock_ch_4_url));
+            editor.putBoolean("ch_4_starred", false);
+            editor.putString("ch_5_name", getString(R.string.stock_ch_5_name));
+            editor.putString("ch_5_url", getString(R.string.stock_ch_5_url));
+            editor.putBoolean("ch_5_starred", false);
 
             editor.putBoolean("first_run", false);
             editor.commit();
