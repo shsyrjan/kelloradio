@@ -227,6 +227,7 @@ public class MainActivity extends Activity
         checkFirstRun();
         load();
         updateAlarm();
+        setVolumeControlStream(AudioManager.STREAM_ALARM);
         updateView();
     }
 
