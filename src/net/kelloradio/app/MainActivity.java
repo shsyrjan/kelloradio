@@ -95,7 +95,7 @@ class Player extends Object
     }
 
     public void resume() {
-        if (!stopped)
+        if (!stopped && !playing())
             play();
     }
 
