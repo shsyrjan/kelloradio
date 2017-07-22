@@ -48,6 +48,7 @@ class Player extends Object
     public int info = 0;
     public int error = 0;
     public int bufferingPercent = 0;
+    public Exception exception = null;
 
     Player(IView view) {
         this.view = view;
@@ -77,6 +78,7 @@ class Player extends Object
 
     public void play() {
         stop();
+        exception = null;
         error = 0;
         info = 0;
         buffering = false;
@@ -91,8 +93,9 @@ class Player extends Object
             mediaPlayer.setDataSource(this.url);
             mediaPlayer.prepareAsync();
         } catch (Exception e) {
-            error = 1;
+            exception = e;
             stop();
+            view.update();
         }
     }
 
@@ -107,6 +110,18 @@ class Player extends Object
 
     public boolean playing() {
         return mediaPlayer != null && mediaPlayer.isPlaying();
+    }
+
+    public boolean error() {
+        return exception != null || error != 0;
+    }
+
+    public String getMessage() {
+        if (exception != null) {
+            return exception.getMessage();
+        } else {
+            return Integer.toString(error);
+        }
     }
 
     public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -434,8 +449,6 @@ public class MainActivity extends Activity
             } else if (player.info == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
             } else if (player.info == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
             } else {
-                b.append(" ");
-                b.append(player.info);
             }
 
             b.append("]");
@@ -446,9 +459,10 @@ public class MainActivity extends Activity
             stream.setText(player.name);
             StringBuilder b = new StringBuilder();
             b.append("[");
-            if (player.error != 0) {
+            if (player.error()) {
                 b.append(getString(R.string.error));
-                b.append(player.error);
+                b.append(": ");
+                b.append(player.getMessage());
             } else {
                 b.append(getString(R.string.stopped));
             }
