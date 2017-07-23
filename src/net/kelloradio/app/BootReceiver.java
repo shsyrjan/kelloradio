@@ -11,14 +11,9 @@ public class BootReceiver extends BroadcastReceiver
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")) {
             SharedPreferences settings = context.getSharedPreferences(MainActivity.SETTINGS, Context.MODE_PRIVATE);
-            int hour = settings.getInt("hour", 0);
-            int minute = settings.getInt("minute", 0);
-            boolean alarmSet = settings.getBoolean("alarm_set", false);
-            if (alarmSet) {
-                MainActivity.setAlarm(context, MainActivity.getTimeUntil(hour, minute));
-            } else {
-                MainActivity.cancelAlarm(context);
-            }
+            MyAlarmManager alarm = new MyAlarmManager();
+            alarm.load(settings);
+            alarm.updateAlarm(context);
         }
     }
 }

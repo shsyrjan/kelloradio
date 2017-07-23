@@ -1,14 +1,9 @@
 package net.kelloradio.app;
 
 import android.app.Activity;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.os.Bundle;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
@@ -32,16 +27,12 @@ public class MainActivity extends Activity
         Player.IView,
         Handler.Callback
 {
-    static final long ONE_SECOND = 1000;
-    static final long ONE_MINUTE = 1000*60;
-    static final long ONE_HOUR   = 1000*60*60;
-    static final long ONE_DAY    = 1000*60*60*24;
-
     static final String SETTINGS = "MainActivity";
 
     Player player = new Player(this);
     ChannelStore channels = new ChannelStore();
     ChannelStore.Channel channelEditor = null;
+    MyAlarmManager alarm = new MyAlarmManager();
 
     static final int MSG_UPDATE_VIEW = 1;
     Handler handler = new Handler(this);
@@ -59,9 +50,6 @@ public class MainActivity extends Activity
     boolean dirty = false;
 
     TimePicker timePicker = null;
-    boolean alarmSet = false;
-    int hour = 6;
-    int minute = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -72,7 +60,7 @@ public class MainActivity extends Activity
         }
         checkFirstRun();
         load();
-        updateAlarm();
+        alarm.updateAlarm(this);
         setVolumeControlStream(AudioManager.STREAM_ALARM);
         updateView();
     }
@@ -166,11 +154,7 @@ public class MainActivity extends Activity
         player.name = settings.getString("name", "");
         player.url = settings.getString("url", "");
         channels.load(settings);
-
-        // alarm
-        hour = settings.getInt("hour", 6);
-        minute = settings.getInt("minute", 0);
-        alarmSet = settings.getBoolean("alarm_set", false);
+        alarm.load(settings);
     }
 
     public void save() {
@@ -179,11 +163,7 @@ public class MainActivity extends Activity
         editor.putString("name", player.name);
         editor.putString("url", player.url);
         channels.save(settings, editor);
-
-        // alarm
-        editor.putInt("hour", hour);
-        editor.putInt("minute", minute);
-        editor.putBoolean("alarm_set", alarmSet);
+        alarm.save(settings, editor);
 
         if (Build.VERSION.SDK_INT >= 9) {
             editor.apply();
@@ -470,11 +450,11 @@ public class MainActivity extends Activity
 
     public void updateAlarmView() {
         TextView alarmTime = (TextView)findViewById(R.id.alarm_time);
-        if (alarmSet) {
+        if (alarm.isSet()) {
             if (isTime24()) {
-                alarmTime.setText(time24(hour, minute));
+                alarmTime.setText(time24(alarm.getHour(), alarm.getMinute()));
             } else {
-                alarmTime.setText(time12(hour, minute));
+                alarmTime.setText(time12(alarm.getHour(), alarm.getMinute()));
             }
         } else {
             alarmTime.setText("--:--");
@@ -500,32 +480,19 @@ public class MainActivity extends Activity
         updateView();
     }
 
-    public static Calendar getTimeUntil(int hour, int minutes) {
-        Calendar now = Calendar.getInstance();
-        Calendar next = Calendar.getInstance();
-        next.set(Calendar.HOUR_OF_DAY, hour);
-        next.set(Calendar.MINUTE, minutes);
-        next.set(Calendar.SECOND, 0);
-        if (next.before(now) || next.equals(now)) {
-            // the next time is tomorrow
-            next.roll(Calendar.DATE, true);
-        }
-        return next;
-    }
-
     public void alarmToast() {
-        Calendar alarmTime = getTimeUntil(hour, minute);
+        Calendar alarmTime = alarm.getNextTime();
         Calendar now = Calendar.getInstance();
         long diff = alarmTime.getTimeInMillis() - now.getTimeInMillis();
-        long hours = diff/ONE_HOUR;
-        long minutes = (diff/ONE_MINUTE) % 60;
-        long seconds = (diff/ONE_SECOND) % 60;
+        long hours = diff/MyAlarmManager.ONE_HOUR;
+        long minutes = (diff/MyAlarmManager.ONE_MINUTE) % 60;
+        long seconds = (diff/MyAlarmManager.ONE_SECOND) % 60;
 
         StringBuilder sb = new StringBuilder();
         sb.append(getString(R.string.time_until_next_alarm));
         sb.append("\n");
 
-        if (diff >= ONE_HOUR) {
+        if (diff >= MyAlarmManager.ONE_HOUR) {
             sb.append(hours);
             sb.append(" ");
             if (hours == 1) {
@@ -536,7 +503,7 @@ public class MainActivity extends Activity
             sb.append(" ");
         }
 
-        if (diff >= ONE_MINUTE) {
+        if (diff >= MyAlarmManager.ONE_MINUTE) {
             sb.append(minutes);
             sb.append(" ");
             if (minutes == 1) {
@@ -546,7 +513,7 @@ public class MainActivity extends Activity
             }
         }
 
-        if (diff < ONE_MINUTE) {
+        if (diff < MyAlarmManager.ONE_MINUTE) {
             sb.append(seconds);
             sb.append(" ");
             if (seconds == 1) {
@@ -566,8 +533,8 @@ public class MainActivity extends Activity
     public TimePicker newTimePicker() {
         TimePicker tp = new TimePicker(this);
         tp.setIs24HourView(isTime24());
-        tp.setHour(hour);
-        tp.setMinute(minute);
+        tp.setHour(alarm.getHour());
+        tp.setMinute(alarm.getMinute());
         return tp;
     }
 
@@ -581,20 +548,18 @@ public class MainActivity extends Activity
     }
 
     public void onSetAlarmOk(View view) {
-        hour = timePicker.getHour();
-        minute = timePicker.getMinute();
-        alarmSet = true;
+        alarm.set(timePicker.getHour(), timePicker.getMinute());;
         save();
-        updateAlarm();
+        alarm.updateAlarm(this);
         back();
         alarmToast();
         updateView();
     }
 
     public void onRemoveAlarm(View view) {
-        alarmSet = false;
+        alarm.remove();
         save();
-        updateAlarm();
+        alarm.updateAlarm(this);
         back();
         Toast.makeText(this, getString(R.string.alarm_removed), Toast.LENGTH_LONG).show();
         updateView();
@@ -613,50 +578,5 @@ public class MainActivity extends Activity
     public void onClick(View view) {
         clickedView = view;
         updateView();
-    }
-
-    public void updateAlarm() {
-        if (alarmSet) {
-            setAlarm(this, getTimeUntil(hour, minute));
-        } else {
-            cancelAlarm(this);
-        }
-    }
-
-    public static PendingIntent getAlarmIntent(Context context) {
-        Intent intent = new Intent(context, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        return PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_CANCEL_CURRENT);
-    }
-
-    public static void setAlarm(Context context, Calendar alarmTime) {
-        AlarmManager alarmMgr = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
-        alarmMgr.setRepeating(
-            AlarmManager.RTC_WAKEUP,
-            alarmTime.getTimeInMillis(),
-            ONE_DAY,
-            getAlarmIntent(context));
-
-        setBootReceiverEnabled(context, true);
-    }
-
-    public static void cancelAlarm(Context context) {
-        AlarmManager alarmMgr = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
-        alarmMgr.cancel(getAlarmIntent(context));
-        setBootReceiverEnabled(context, false);
-    }
-
-    public static void setBootReceiverEnabled(Context context, boolean enabled) {
-        ComponentName receiver = new ComponentName(context, BootReceiver.class);
-        PackageManager pm = context.getPackageManager();
-        pm.setComponentEnabledSetting(
-            receiver,
-            enabled ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                    : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP);
     }
 }
