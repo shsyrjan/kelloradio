@@ -715,7 +715,7 @@ public class MainActivity extends Activity
         if (diff >= ONE_HOUR) {
             sb.append(hours);
             sb.append(" ");
-            if (hours < 2) {
+            if (hours == 1) {
                 sb.append(getString(R.string.hour));
             } else {
                 sb.append(getString(R.string.hours));
@@ -726,7 +726,7 @@ public class MainActivity extends Activity
         if (diff >= ONE_MINUTE) {
             sb.append(minutes);
             sb.append(" ");
-            if (minutes < 2) {
+            if (minutes == 1) {
                 sb.append(getString(R.string.minute));
             } else {
                 sb.append(getString(R.string.minutes));
@@ -736,7 +736,7 @@ public class MainActivity extends Activity
         if (diff < ONE_MINUTE) {
             sb.append(seconds);
             sb.append(" ");
-            if (seconds < 2) {
+            if (seconds == 1) {
                 sb.append(getString(R.string.second));
             } else {
                 sb.append(getString(R.string.seconds));
