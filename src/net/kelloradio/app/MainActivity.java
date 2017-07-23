@@ -20,7 +20,6 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 import android.view.View;
 import android.view.ViewGroup;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Stack;
 import android.provider.Settings;
@@ -38,31 +37,8 @@ public class MainActivity extends Activity
     static final String SETTINGS = "MainActivity";
 
     Player player = new Player(this);
-
-    class Channel
-    {
-        String name = "";
-        String url = "";
-        boolean starred = false;
-
-        Channel() {
-        }
-
-        Channel(Channel other) {
-            assign(other);
-        }
-
-        void assign(Channel other) {
-            this.name = other.name;
-            this.url = other.url;
-            this.starred = other.starred;
-        }
-    }
-
-    ArrayList<Channel> channels = new ArrayList<Channel>();
-    Channel targetChannel = null;
-    Channel editedChannel = new Channel();
-    Channel newChannel = new Channel();
+    ChannelStore channels = new ChannelStore();
+    ChannelStore.Channel channelEditor = null;
 
     public enum State {
         MAIN,
@@ -176,25 +152,7 @@ public class MainActivity extends Activity
             editor.putString("name", getString(R.string.stock_ch_0_name));
             editor.putString("url", getString(R.string.stock_ch_0_url));
 
-            editor.putInt("ch_num", 6);
-            editor.putString("ch_0_name", getString(R.string.stock_ch_0_name));
-            editor.putString("ch_0_url", getString(R.string.stock_ch_0_url));
-            editor.putBoolean("ch_0_starred", true);
-            editor.putString("ch_1_name", getString(R.string.stock_ch_1_name));
-            editor.putString("ch_1_url", getString(R.string.stock_ch_1_url));
-            editor.putBoolean("ch_1_starred", true);
-            editor.putString("ch_2_name", getString(R.string.stock_ch_2_name));
-            editor.putString("ch_2_url", getString(R.string.stock_ch_2_url));
-            editor.putBoolean("ch_2_starred", true);
-            editor.putString("ch_3_name", getString(R.string.stock_ch_3_name));
-            editor.putString("ch_3_url", getString(R.string.stock_ch_3_url));
-            editor.putBoolean("ch_3_starred", false);
-            editor.putString("ch_4_name", getString(R.string.stock_ch_4_name));
-            editor.putString("ch_4_url", getString(R.string.stock_ch_4_url));
-            editor.putBoolean("ch_4_starred", false);
-            editor.putString("ch_5_name", getString(R.string.stock_ch_5_name));
-            editor.putString("ch_5_url", getString(R.string.stock_ch_5_url));
-            editor.putBoolean("ch_5_starred", false);
+            channels.stockReset(this, settings, editor);
 
             editor.putBoolean("first_run", false);
             editor.commit();
@@ -205,16 +163,7 @@ public class MainActivity extends Activity
         SharedPreferences settings = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
         player.name = settings.getString("name", "");
         player.url = settings.getString("url", "");
-        int ch_num = settings.getInt("ch_num", 0);
-        channels.clear();
-        for (int i = 0; i < ch_num; ++i) {
-            Channel channel = new Channel();
-            String ch_i = "ch_" + Integer.toString(i);
-            channel.name = settings.getString(ch_i + "_name", "");
-            channel.url = settings.getString(ch_i + "_url", "");
-            channel.starred = settings.getBoolean(ch_i + "_starred", false);
-            channels.add(channel);
-        }
+        channels.load(settings);
 
         // alarm
         hour = settings.getInt("hour", 6);
@@ -224,28 +173,10 @@ public class MainActivity extends Activity
 
     public void save() {
         SharedPreferences settings = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
-        int old_ch_num = settings.getInt("ch_num", 0);
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("name", player.name);
         editor.putString("url", player.url);
-        editor.putInt("ch_num", channels.size());
-        int i = 0;
-        for (i = 0; i < channels.size(); ++i) {
-            Channel channel = channels.get(i);
-            String ch_i = "ch_" + Integer.toString(i);
-            editor.putString(ch_i + "_name", channel.name);
-            editor.putString(ch_i + "_url", channel.url);
-            editor.putBoolean(ch_i + "_starred", channel.starred);
-        }
-        for (; i < old_ch_num; ++i) {
-            String ch_i = "ch_" + Integer.toString(i);
-            if (settings.contains(ch_i + "_name"))
-                editor.remove(ch_i + "_name");
-            if (settings.contains(ch_i + "_url"))
-                editor.remove(ch_i + "_url");
-            if (settings.contains(ch_i + "_starred"))
-                editor.remove(ch_i + "_starred");
-        }
+        channels.save(settings, editor);
 
         // alarm
         editor.putInt("hour", hour);
@@ -367,7 +298,7 @@ public class MainActivity extends Activity
         int i = 0;
         int j = 0;
         for (; i < channels.size(); ++i) {
-            Channel channel = channels.get(i);
+            ChannelStore.Channel channel = channels.get(i);
             if (!channel.starred)
                 continue;
             if (j >= channelsView.getChildCount()) {
@@ -422,7 +353,7 @@ public class MainActivity extends Activity
         ViewGroup channelList = (ViewGroup)findViewById(R.id.channel_list);
         int i = 0;
         for (; i < channels.size(); ++i) {
-            Channel channel = channels.get(i);
+            ChannelStore.Channel channel = channels.get(i);
             if (i >= channelList.getChildCount()) {
                 channelList.addView(newChannelItem());
             }
@@ -463,19 +394,14 @@ public class MainActivity extends Activity
         Button cancel = (Button)findViewById(R.id.channel_edit_cancel_button);
         Button tryPlayButton = (Button)findViewById(R.id.channel_edit_try_play_button);
         Button removeButton = (Button)findViewById(R.id.channel_edit_remove_button);
-        removeButton.setVisibility((targetChannel == newChannel) ? View.GONE : View.VISIBLE);
+        removeButton.setVisibility(channels.adding() ? View.GONE : View.VISIBLE);
         String name = nameInput.getText().toString();
         String url = urlInput.getText().toString().trim();
 
         if (clicked(ok)) {
-            editedChannel.name = name;
-            editedChannel.url = url;
-
-            targetChannel.assign(editedChannel);
-            if (targetChannel == newChannel) {
-                channels.add(new Channel(newChannel));
-            } else {
-            }
+            channelEditor.name = name;
+            channelEditor.url = url;
+            channels.commit();
             save();
             back();
         }
@@ -487,9 +413,7 @@ public class MainActivity extends Activity
             player.play();
         }
         if (clicked(removeButton)) {
-            if (targetChannel != newChannel) {
-                channels.remove(targetChannel);
-            }
+            channels.removeEditorTarget();
             back();
         }
     }
@@ -537,21 +461,22 @@ public class MainActivity extends Activity
         }
     }
 
-    public void editChannel(Channel channel) {
-        targetChannel = channel;
-        editedChannel.assign(channel);
+    public void updateChannelEditControls() {
         EditText nameInput = (EditText)findViewById(R.id.channel_edit_name_input);
-        nameInput.setText(editedChannel.name);
+        nameInput.setText(channelEditor.name);
         EditText urlInput = (EditText)findViewById(R.id.channel_edit_url_input);
-        urlInput.setText(editedChannel.url);
+        urlInput.setText(channelEditor.url);
         setState(State.CHANNEL_EDIT);
     }
 
+    public void editChannel(ChannelStore.Channel channel) {
+        channelEditor = channels.edit(channel);
+        updateChannelEditControls();
+    }
+
     public void onAddChannel(View view) {
-        newChannel.name = "";
-        newChannel.url = "";
-        newChannel.starred = false;
-        editChannel(newChannel);
+        channelEditor = channels.editNew();
+        updateChannelEditControls();
         updateView();
     }
 
