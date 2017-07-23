@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.widget.TextView;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -388,7 +389,11 @@ public class MainActivity extends Activity
         editor.putInt("minute", minute);
         editor.putBoolean("alarm_set", alarmSet);
 
-        editor.apply();
+        if (Build.VERSION.SDK_INT >= 9) {
+            editor.apply();
+        } else {
+            editor.commit();
+        }
     }
 
     public void initView() {
