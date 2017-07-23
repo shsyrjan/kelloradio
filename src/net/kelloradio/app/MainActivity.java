@@ -12,6 +12,8 @@ import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.widget.TextView;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -27,7 +29,8 @@ import android.provider.Settings;
 public class MainActivity extends Activity
     implements
         View.OnClickListener,
-        Player.IView
+        Player.IView,
+        Handler.Callback
 {
     static final long ONE_SECOND = 1000;
     static final long ONE_MINUTE = 1000*60;
@@ -39,6 +42,9 @@ public class MainActivity extends Activity
     Player player = new Player(this);
     ChannelStore channels = new ChannelStore();
     ChannelStore.Channel channelEditor = null;
+
+    static final int MSG_UPDATE_VIEW = 1;
+    Handler handler = new Handler(this);
 
     public enum State {
         MAIN,
@@ -122,11 +128,7 @@ public class MainActivity extends Activity
         TextView tv = ((TextView)findViewById(R.id.debug));
         tv.setText(m);
         tv.setVisibility(View.VISIBLE);
-        updateView();
-    }
-
-    public void update() {
-        updateView();
+        requestUpdate();
     }
 
     public void back() {
@@ -199,6 +201,24 @@ public class MainActivity extends Activity
         findViewById(R.id.channel_edit_remove_button).setOnClickListener(this);
     }
 
+    public void update() {
+        requestUpdate();
+    }
+
+    public void requestUpdate() {
+        if (!handler.hasMessages(MSG_UPDATE_VIEW)) {
+            handler.sendEmptyMessage(MSG_UPDATE_VIEW);
+        }
+    }
+
+    public boolean handleMessage(Message msg) {
+        if (msg.what == MSG_UPDATE_VIEW) {
+            updateView();
+            return true;
+        }
+        return false;
+    }
+
     public boolean clicked(View view) {
         if (view == clickedView) {
             clickedView = null;
@@ -224,7 +244,7 @@ public class MainActivity extends Activity
 
         if (dirty) {
             dirty = false;
-            updateView();
+            requestUpdate();
         }
     }
 
