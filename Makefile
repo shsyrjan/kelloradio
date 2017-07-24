@@ -1,9 +1,7 @@
 # Environment variables
 ANDROID_HOME ?=
 KEYSTORE ?=
-STOREPASS ?=
-KEYPASS ?=
-KEYALIAS ?=
+KSPASS ?=
 
 # Build tools & SDK versions
 build_tools := 24.0.3
@@ -26,8 +24,16 @@ resources   := $(shell find $(res_dir) -type f)
 generated   := $(gen_dir)/net/kelloradio/app/R.java
 libraries   :=
 
-# Final zipaligned APK
-$(out_dir)/$(project).apk: $(out_dir)/$(project)-unaligned.apk
+# Sign the APK
+$(out_dir)/$(project).apk: $(out_dir)/$(project)-unsigned.apk
+	apksigner.bat sign \
+		--ks $(KEYSTORE) \
+		--ks-pass env:KSPASS \
+		--out $@ \
+		$<
+
+# zipaligned APK
+$(out_dir)/$(project)-unsigned.apk: $(out_dir)/$(project)-unaligned.apk
 	zipalign -f 4 $< $@
 
 # Packaging the APK
@@ -38,12 +44,6 @@ $(out_dir)/$(project)-unaligned.apk: $(out_dir) AndroidManifest.xml $(resources)
 		-S $(res_dir) \
 		-F $@
 	cd $(int_dir) && aapt add $(abspath $@) classes.dex
-	jarsigner -verbose \
-		-keystore $(KEYSTORE)  \
-		-storepass $(STOREPASS) \
-		-keypass $(KEYPASS) \
-		$@ \
-		$(KEYALIAS)
 
 # Compilation & dexing w/ Jack
 $(int_dir)/classes.dex: $(int_dir) $(sources) $(generated) $(libraries)
