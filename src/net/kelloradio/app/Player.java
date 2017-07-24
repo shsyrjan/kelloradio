@@ -1,7 +1,9 @@
 package net.kelloradio.app;
 
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 
 class Player extends Object
@@ -17,6 +19,8 @@ class Player extends Object
     }
 
     IView view = null;
+
+    int audioStreamType = AudioManager.STREAM_ALARM;
 
     String name = "";
     String url = "";
@@ -68,7 +72,7 @@ class Player extends Object
         mediaPlayer.setOnInfoListener(this);
         mediaPlayer.setOnBufferingUpdateListener(this);
         mediaPlayer.setOnPreparedListener(this);
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
+        mediaPlayer.setAudioStreamType(audioStreamType);
         try {
             mediaPlayer.setDataSource(this.url);
             mediaPlayer.prepareAsync();
@@ -138,5 +142,42 @@ class Player extends Object
 
     void restoreInstanceState(Bundle savedInstanceState) {
         stopped = savedInstanceState.getBoolean("stopped", false);
+    }
+
+    public int getAudioStreamType(String pref, int defaultValue) {
+        int type;
+        try {
+            type = Integer.parseInt(pref);
+        } catch (Exception e) {
+            return defaultValue;
+        }
+        switch (type) {
+        case AudioManager.STREAM_ALARM: break;
+        case AudioManager.STREAM_DTMF:
+            if (Build.VERSION.SDK_INT < 5)
+                return defaultValue;
+            break;
+        case AudioManager.STREAM_MUSIC: break;
+        case AudioManager.STREAM_NOTIFICATION: break;
+        case AudioManager.STREAM_RING: break;
+        case AudioManager.STREAM_SYSTEM: break;
+        case AudioManager.STREAM_VOICE_CALL: break;
+        case AudioManager.USE_DEFAULT_STREAM_TYPE: break;
+        default:
+            return defaultValue;
+        }
+        return type;
+    }
+
+    public void load(SharedPreferences settings) {
+        audioStreamType = getAudioStreamType(settings.getString("pref_audio_stream_type", ""), AudioManager.STREAM_ALARM);
+        name = settings.getString("name", "");
+        url = settings.getString("url", "");
+    }
+
+    public void save(SharedPreferences settings, SharedPreferences.Editor editor) {
+        editor.putString("pref_audio_stream_type", Integer.toString(audioStreamType));
+        editor.putString("name", name);
+        editor.putString("url", url);
     }
 }

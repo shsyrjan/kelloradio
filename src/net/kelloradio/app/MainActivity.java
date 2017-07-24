@@ -3,18 +3,23 @@ package net.kelloradio.app;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.widget.TextView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.EditText;
 import android.widget.TimePicker;
 import android.widget.Toast;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import java.util.Calendar;
@@ -27,8 +32,6 @@ public class MainActivity extends Activity
         Player.IView,
         Handler.Callback
 {
-    static final String SETTINGS = "MainActivity";
-
     Player player = new Player(this);
     ChannelStore channels = new ChannelStore();
     ChannelStore.Channel channelEditor = null;
@@ -51,6 +54,8 @@ public class MainActivity extends Activity
 
     TimePicker timePicker = null;
 
+    static final int SETTINGS_REQUEST_CODE = 1;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,9 +64,10 @@ public class MainActivity extends Activity
             player.restoreInstanceState(savedInstanceState);
         }
         checkFirstRun();
+
         load();
         alarm.updateAlarm(this);
-        setVolumeControlStream(AudioManager.STREAM_ALARM);
+        setVolumeControlStream(player.audioStreamType);
         updateView();
     }
 
@@ -112,6 +118,41 @@ public class MainActivity extends Activity
         updateView();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        case R.id.settings_item:
+            showSettings();
+            return true;
+        default:
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == SETTINGS_REQUEST_CODE) {
+            load();
+            alarm.updateAlarm(this);
+            setVolumeControlStream(player.audioStreamType);
+            if (!player.stopped)
+                player.play();
+        }
+        requestUpdate();
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    public void showSettings() {
+        startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_REQUEST_CODE);
+    }
+
     public void debug(String m) {
         TextView tv = ((TextView)findViewById(R.id.debug));
         tv.setText(m);
@@ -135,7 +176,7 @@ public class MainActivity extends Activity
     }
 
     public void checkFirstRun() {
-        SharedPreferences settings = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         boolean first_run = settings.getBoolean("first_run", true);
         if (first_run) {
             SharedPreferences.Editor editor = settings.edit();
@@ -150,18 +191,16 @@ public class MainActivity extends Activity
     }
 
     public void load() {
-        SharedPreferences settings = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
-        player.name = settings.getString("name", "");
-        player.url = settings.getString("url", "");
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        player.load(settings);
         channels.load(settings);
         alarm.load(settings);
     }
 
     public void save() {
-        SharedPreferences settings = getSharedPreferences(SETTINGS, Context.MODE_PRIVATE);
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = settings.edit();
-        editor.putString("name", player.name);
-        editor.putString("url", player.url);
+        player.save(settings, editor);
         channels.save(settings, editor);
         alarm.save(settings, editor);
 

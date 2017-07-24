@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+  <ListPreference
+      android:key="pref_audio_stream_type"
+      android:title="@string/pref_audio_stream_type"
+      android:summary="@string/pref_audio_stream_type_summ"
+      android:entries="@array/pref_audio_stream_type_entries"
+      android:entryValues="@array/pref_audio_stream_type_values"
+      android:defaultValue="@string/pref_audio_stream_type_default" />
+</PreferenceScreen>

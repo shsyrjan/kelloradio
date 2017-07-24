@@ -18,6 +18,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="net.kelloradio.app.SettingsActivity" >
+        </activity>
         <receiver android:name=".BootReceiver"
                   android:enabled="false">
           <intent-filter>

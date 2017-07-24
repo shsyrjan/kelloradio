@@ -36,4 +36,14 @@
     <string name="seconds">sekuntia</string>
     <string name="alarm_removed">Hälytys poistettu</string>
 
+    <!-- settings -->
+    <string name="settings">Asetukset</string>
+
+    <string name="pref_audio_stream_type">Toiston tyyppi</string>
+    <string name="pref_audio_stream_type_summ">Toiston voi aloittaa hälytyksenä tai mediatoistona.</string>
+
+    <string-array name="pref_audio_stream_type_entries">
+      <item>Hälytys</item>
+      <item>Media</item>
+    </string-array>
 </resources>
