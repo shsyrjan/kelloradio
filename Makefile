@@ -1,5 +1,6 @@
 # Environment variables
 ANDROID_HOME ?=
+JAVA_HOME ?=
 KEYSTORE ?=
 KSPASS ?=
 
@@ -24,9 +25,18 @@ resources   := $(shell find $(res_dir) -type f)
 generated   := $(gen_dir)/net/kelloradio/app/R.java
 libraries   :=
 
+# Tools
+build_tools_dir := $(ANDROID_HOME)/build-tools/$(build_tools)
+aapt        := $(build_tools_dir)/aapt
+zipalign    := $(build_tools_dir)/zipalign
+apksigner   := $(build_tools_dir)/apksigner
+java        := $(JAVA_HOME)/bin/java
+curl        := curl
+adb         := $(ANDROID_HOME)/platform-tools/adb
+
 # Sign the APK
 $(out_dir)/$(project).apk: $(out_dir)/$(project)-unsigned.apk
-	apksigner.bat sign \
+	$(apksigner) sign \
 		--ks $(KEYSTORE) \
 		--ks-pass env:KSPASS \
 		--out $@ \
@@ -34,20 +44,20 @@ $(out_dir)/$(project).apk: $(out_dir)/$(project)-unsigned.apk
 
 # zipaligned APK
 $(out_dir)/$(project)-unsigned.apk: $(out_dir)/$(project)-unaligned.apk
-	zipalign -f 4 $< $@
+	$(zipalign) -f 4 $< $@
 
 # Packaging the APK
 $(out_dir)/$(project)-unaligned.apk: $(out_dir) AndroidManifest.xml $(resources) $(int_dir)/classes.dex
-	aapt package -f \
+	$(aapt) package -f \
 		-M AndroidManifest.xml \
 		-I $(ANDROID_HOME)/platforms/$(target)/android.jar \
 		-S $(res_dir) \
 		-F $@
-	cd $(int_dir) && aapt add $(abspath $@) classes.dex
+	cd $(int_dir) && $(aapt) add $(abspath $@) classes.dex
 
 # Compilation & dexing w/ Jack
 $(int_dir)/classes.dex: $(int_dir) $(sources) $(generated) $(libraries)
-	java -jar $(ANDROID_HOME)/build-tools/$(build_tools)/jack.jar \
+	$(java) -jar $(ANDROID_HOME)/build-tools/$(build_tools)/jack.jar \
 		--classpath $(ANDROID_HOME)/platforms/$(target)/android.jar \
 		$(foreach lib,$(libraries),--import $(lib)) \
 		--output-dex $(int_dir) \
@@ -55,7 +65,7 @@ $(int_dir)/classes.dex: $(int_dir) $(sources) $(generated) $(libraries)
 
 # Generating R.java based on the manifest and resources
 $(generated): $(gen_dir) AndroidManifest.xml $(resources)
-	aapt package -f \
+	$(aapt) package -f \
 		-M AndroidManifest.xml \
 		-I $(ANDROID_HOME)/platforms/$(target)/android.jar \
 		-S $(res_dir) \
@@ -64,7 +74,7 @@ $(generated): $(gen_dir) AndroidManifest.xml $(resources)
 
 # Fetching dependencies from Maven Central
 $(libraries):
-	curl --silent \
+	$(curl) --silent \
 		    --location \
         --output $@ \
         --create-dirs \
@@ -80,12 +90,12 @@ clean:
 
 .PHONY: install
 install: $(out_dir)/$(project).apk
-	adb install -r $<
+	$(adb) install -r $<
 
 .PHONY: uninstall
 uninstall:
-	adb uninstall $(package)
+	$(adb) uninstall $(package)
 
 .PHONY: run
 run:
-	adb shell am start $(package)/.MainActivity
+	$(adb) shell am start $(package)/.MainActivity
